@@ -4,7 +4,7 @@ import { ref, watch } from 'vue';
 const lyric = ref(''); 
 const displayLyric = ref([]);
 const openIndex = ref('');
-const prevIndex = ref(-1);
+const stack = ref([]);
 const errorMsg = ref('');
 
 watch(lyric, (newLyric) => {
@@ -13,6 +13,7 @@ watch(lyric, (newLyric) => {
     return;
   }
   displayLyric.value = newLyric.split('').map(c => '＿');
+  stack.value = [];
   errorMsg.value = '';
 });
 
@@ -23,20 +24,29 @@ function zeroPad(num, len) {
 function openChar() {
   errorMsg.value = '';
   const idx = Number(openIndex.value);
+  
+  if (stack.value.includes(idx)) {
+    errorMsg.value = 'その文字は既に開かれています。';
+    return;
+  }
+
   if (isNaN(idx) || idx < 0 || idx >= lyric.value.length) {
     errorMsg.value = '有効な番号を入力してください。';
     return;
   }
+
   displayLyric.value[idx] = lyric.value[idx];
   openIndex.value = '';
-  prevIndex.value = idx;
+  stack.value.push(idx);
 }
 
 function undo() {
-  if (prevIndex.value !== -1) {
-    displayLyric.value[prevIndex.value] = '＿';
-    prevIndex.value = -1;
+  if (stack.value.length === 0) {
+    errorMsg.value = '戻せる操作がありません。';
+    return;
   }
+  const lastIdx = stack.value.pop();
+  displayLyric.value[lastIdx] = '＿';
 }
 
 function copyDisplayLyricToClipboard() {
@@ -89,7 +99,7 @@ function copyDisplayLyricToClipboard() {
             size="small"
             color="primary"
             @click="undo"
-            title="一つ前に戻す（一回だけ有効）"
+            title="一つ前に戻す"
           >
             <v-icon icon="mdi-undo-variant"></v-icon>
           </v-btn>
@@ -100,7 +110,7 @@ function copyDisplayLyricToClipboard() {
             icon
             size="small"
             color="red"
-            @click="displayLyric = lyric.split('')"
+            @click="displayLyric = lyric.split(''); stack = []"
             title="正解を表示"
           >
             <v-icon icon="mdi-eye-outline"></v-icon>
