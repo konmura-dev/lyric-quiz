@@ -34,6 +34,7 @@ function saveNewQuestion() {
   }
   questions.value.push(question);
   localStorage.setItem('lyric-quiz-questions', JSON.stringify(questions.value));
+  newQestion.value = '';
   isStorePageOpen.value = false;
 };
 
