@@ -1,11 +1,51 @@
 <script setup>
-import { ref, watch } from 'vue';
+import { onMounted, ref, watch } from 'vue';
+
+const questions = ref([]);
 
 const lyric = ref(''); 
 const displayLyric = ref([]);
 const openIndex = ref('');
 const stack = ref([]);
 const errorMsg = ref('');
+
+const isStorePageOpen = ref(false);
+const toggleStorePage = () => {
+  isStorePageOpen.value = !isStorePageOpen.value;
+};
+const newQestion = ref('');
+
+const isSelectionPageOpen = ref(false);
+const toggleSelectionPage = () => {
+  isSelectionPageOpen.value = !isSelectionPageOpen.value;
+};
+
+onMounted(() => {
+  const savedQuestions = localStorage.getItem('lyric-quiz-questions');
+  if (savedQuestions) {
+    questions.value = JSON.parse(savedQuestions);
+  }
+});
+
+function saveNewQuestion() {
+  const question = newQestion.value.trim();
+  if (!question) {
+    return;
+  }
+  questions.value.push(question);
+  localStorage.setItem('lyric-quiz-questions', JSON.stringify(questions.value));
+  isStorePageOpen.value = false;
+};
+
+function removeQuestion(index) {
+  questions.value.splice(index, 1);
+  localStorage.setItem('lyric-quiz-questions', JSON.stringify(questions.value));
+};
+
+function loadQuestion(index) {
+  lyric.value = questions.value[index];
+  isSelectionPageOpen.value = false;
+}
 
 watch(lyric, (newLyric) => {
   if (!newLyric) {
@@ -24,7 +64,7 @@ function zeroPad(num, len) {
 function openChar() {
   errorMsg.value = '';
   const idx = Number(openIndex.value);
-  
+
   if (stack.value.includes(idx)) {
     errorMsg.value = 'その文字は既に開かれています。';
     return;
@@ -59,17 +99,89 @@ function copyDisplayLyricToClipboard() {
 </script>
 
 <template>
+  <v-dialog
+    v-model="isStorePageOpen"
+    persistent
+  >
+    <v-sheet class="dialog-content">
+      <v-toolbar flat>
+        <v-toolbar-title>出題を保存</v-toolbar-title>
+        <v-spacer></v-spacer>
+        <v-btn icon @click="isStorePageOpen = false">
+          <v-icon icon="mdi-close"></v-icon>
+        </v-btn>
+      </v-toolbar>
+      <v-divider></v-divider>
+      <v-card-text>
+        <v-text-field
+          v-model="newQestion"
+          label="出題"
+          type="text"
+          variant="outlined"
+          clearable
+        />
+      </v-card-text>
+      <v-card-actions>
+        <v-spacer></v-spacer>
+        <v-btn text @click="saveNewQuestion">保存</v-btn>
+        <v-btn text @click="isStorePageOpen = false">閉じる</v-btn>
+      </v-card-actions>
+    </v-sheet>
+  </v-dialog>
+
+  <v-dialog
+    v-model="isSelectionPageOpen"
+    persistent
+  >
+    <v-sheet class="dialog-content">
+      <v-toolbar flat>
+        <v-toolbar-title>出題を選択</v-toolbar-title>
+        <v-spacer></v-spacer>
+        <v-btn icon @click="isSelectionPageOpen = false">
+          <v-icon icon="mdi-close"></v-icon>
+        </v-btn>
+      </v-toolbar>
+      <v-divider></v-divider>
+      <v-card-text>
+        <v-list>
+          <v-list-item
+            v-for="(question, index) in questions"
+            :key="index"
+          >
+            <v-list-item-title>{{ question }}</v-list-item-title>
+            <v-btn text @click="loadQuestion(index)">選択</v-btn>
+            <v-btn icon @click="removeQuestion(index)">
+              <v-icon icon="mdi-delete"></v-icon>
+            </v-btn>
+          </v-list-item>
+        </v-list>
+      </v-card-text>
+      <v-card-actions>
+        <v-spacer></v-spacer>
+        <v-btn text @click="isSelectionPageOpen = false">閉じる</v-btn>
+      </v-card-actions>
+    </v-sheet>
+  </v-dialog>
+
+
   <v-container class="lyric-quiz">
-    <v-sheet elevation="4" class="pa-4 height-auto">
+    <v-sheet elevation="4" class="pa-4 height-auto width-auto">
+      <div class="mb-4"> 
+        <v-btn
+          class=""
+          color="primary"
+          @click="toggleStorePage()"
+          block
+        >出題を保存</v-btn> 
+      </div>
       <div class="">
-        <div class="text-h5 mb-4">
-          <v-text-field
-            v-model="lyric"
-            label="歌詞を入力してください"
-            type="text"
-            variant="outlined"
-            clearable
-          />
+        <div class="question-field text-h5 mb-4">
+          <v-btn
+            class="load-btn"
+            color="primary"
+            @click="toggleSelectionPage()"
+            block
+          >読み込み</v-btn> 
         </div>
 
         <div class="lyric text-h5 mb-4">
@@ -138,28 +250,79 @@ function copyDisplayLyricToClipboard() {
 </template>
 
 <style scoped>
-.question {
+.lyric-quiz {
+  max-width: 600px;
+  margin: 2em auto;
+}
+.lyric {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  letter-spacing: 0.2em;
+  gap: 0.5em;
+  margin-bottom: 1em;
 }
 .index-char {
   display: flex;
   flex-direction: column;
-  text-align: center;
-  margin: 0 0.1em;
-}
-.lyric {
-  display: flex;
   align-items: center;
-  flex-wrap: wrap;
-  letter-spacing: 0.2em;
+  min-width: 2.2em;
+  margin: 0 0.1em;
+  font-size: 1.1em;
+  background: #f5f5f5;
+  border-radius: 6px;
+  padding: 0.2em 0.3em;
+  box-shadow: 0 1px 2px #0001;
+}
+.index-char span:first-child {
+  font-size: 0.7em;
+  color: #888;
+}
+.dialog-content {
+  width: 80%;
+  margin: 0 auto;
+}
+.v-sheet {
+  border-radius: 12px;
+}
+.v-list-item {
+  border-bottom: 1px solid #eee;
+}
+.v-list-item:last-child {
+  border-bottom: none;
+}
+.v-btn {
+  margin: 0 0.2em;
 }
 .btn-area {
   display: flex;
   justify-content: center;
-  align-items: center;
 }
-.btn {
-  margin: 0 0.5em;
+.v-card-title, .text-h5, .text-h4 {
+  text-align: center;
+}
+.mb-4 {
+  margin-bottom: 1.5em !important;
+}
+.mb-2 {
+  margin-bottom: 1em !important;
+}
+.pa-4 {
+  padding: 2em !important;
+}
+@media (max-width: 600px) {
+  .lyric-quiz {
+    max-width: 98vw;
+    padding: 0.5em;
+  }
+  .v-sheet {
+    padding: 1em !important;
+    max-width: 100%;
+  }
+  .index-char {
+    min-width: 1.5em;
+    font-size: 1em;
+    padding: 0.1em 0.2em;
+  }
 }
 </style>
