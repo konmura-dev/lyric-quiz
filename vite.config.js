@@ -4,6 +4,7 @@ import vue from '@vitejs/plugin-vue'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [vue()],
+  base: '/lyric-quiz/', // GitHub Pages用にbaseパスを設定
   server: {
     watch: {
       usePolling: true
