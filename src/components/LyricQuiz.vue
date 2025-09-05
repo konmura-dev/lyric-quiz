@@ -80,6 +80,11 @@ function openChar() {
   stack.value.push(idx);
 }
 
+function openByClick(idx) {
+  openIndex.value = idx;
+  openChar();
+} 
+
 function undo() {
   if (stack.value.length === 0) {
     errorMsg.value = '戻せる操作がありません。';
@@ -174,8 +179,9 @@ function copyDisplayLyricToClipboard() {
           block
         >出題を保存</v-btn> 
       </div>
+
       <div class="">
-        <div class="question-field text-h5 mb-4">
+        <div class="question-field text-h5 mb-2">
           <v-btn
             class="load-btn"
             color="primary"
@@ -184,8 +190,13 @@ function copyDisplayLyricToClipboard() {
           >読み込み</v-btn> 
         </div>
 
+        <div class="mb-2">
+          <span v-if="!lyric">出題を読み込んでください。</span>
+          <span v-else>クリックで開けます。</span>
+        </div>
+
         <div class="lyric text-h5 mb-4">
-          <div class="index-char" v-for="(char, idx) in displayLyric" :key="idx">
+          <div class="index-char" v-for="(char, idx) in displayLyric" :key="idx" @click="openByClick(idx)">
             <span>{{ zeroPad(idx, 2) }}</span>
             <span>{{ char }}</span>
           </div>
@@ -273,6 +284,8 @@ function copyDisplayLyricToClipboard() {
   border-radius: 6px;
   padding: 0.2em 0.3em;
   box-shadow: 0 1px 2px #0001;
+  cursor: pointer;
+  user-select: none;
 }
 .index-char span:first-child {
   font-size: 0.7em;
