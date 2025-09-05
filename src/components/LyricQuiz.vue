@@ -263,7 +263,7 @@ function copyDisplayLyricToClipboard() {
 
 <style scoped>
 .lyric-quiz {
-  max-width: 600px;
+  max-width: 616px;
   margin: 2em auto;
 }
 .lyric {
